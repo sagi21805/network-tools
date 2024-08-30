@@ -1,7 +1,9 @@
 // mod arp;
-pub mod arp;
-pub mod find_ips;
-pub mod password_craker;
+mod networking;
+mod password_craking;
+
+use password_craking::*;
+use networking::*;
 
 use password_craker::create_users_from_shadow;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
