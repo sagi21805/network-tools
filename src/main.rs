@@ -12,6 +12,8 @@ fn main() {
 
     let users = create_users_from_shadow();
 
+    println!("users: {:?}", users);
+
     for user in &users {
         let password = user.crack_password("10k-most-common.txt");
     }
