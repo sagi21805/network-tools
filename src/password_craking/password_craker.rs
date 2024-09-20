@@ -1,6 +1,8 @@
 use base64::{engine::general_purpose, Engine as _};
 use sha_crypt::{sha512_crypt_b64, CryptError, Sha512Params};
 use std::fs;
+use std::os::unix::process::ExitStatusExt;
+use std::process::{Command, ExitStatus, Output};
 use std::str;
 use std::thread::ScopedJoinHandle;
 use std::{fmt, string::FromUtf8Error}; // Constatns
@@ -64,13 +66,7 @@ impl User {
                 Err(_) => panic!("Coudln't guess password"),
                 Ok(hash) => hash
             };
-
-            if guess_hash == self.pwd_hash {
-                // println!("Password for user {} is '{}'", self.name, guess);
-                return true;
-            } else {
-                return false;
-            }
+            return guess_hash == self.pwd_hash 
         });
         println!("Password for user {} is '{}'", self.name, password.unwrap());
 
@@ -117,4 +113,29 @@ pub fn create_users_from_shadow() -> Vec<User> {
     }
 
     users
+}
+
+fn guess_wifi_password(net_name: &str, guess: &str) -> ExitStatus{
+    Command::new("sh")
+    .arg("-C")
+    .arg("src/password_craking/scripts/connect_wifi.sh")
+    .arg(net_name)
+    .arg(guess)
+    .status()
+    .expect("failed to execute process")
+}
+
+pub fn crack_wifi_password(net_name: &str, passwords_file: &str) {
+    let weak_passwords_data = fs::read_to_string(
+        passwords_file
+    ).expect("Should have been able to read the file");
+
+    let weak_passwords = weak_passwords_data.split("\n").collect::<Vec<&str>>();
+
+
+    let password = weak_passwords.clone().into_par_iter().find_first(|&guess| {
+        return guess_wifi_password(net_name, guess).success();
+    });
+    println!("Password for net {} is '{}'", net_name, password.expect("expected password"));
+
 }
